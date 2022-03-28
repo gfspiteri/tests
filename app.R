@@ -77,9 +77,11 @@ default_dates <- as.character(default_dates)
 default_date_series <- as.character(default_date_series)
 
 data_notes <- vroom::vroom("cholera_RT_Report.csv", guess_max = 1000, na = "") %>%
-  mutate(DateRep = as.yearmon(paste0(Year, " ", Month), "%Y %B"),
-         Update = str_replace_all(Update, "\xa0", " "),
-         Update = str_trim(Update))
+  mutate(DateRep = as.yearmon(paste0(Year, " ", Month), "%Y %B"))
+
+Encoding(data_notes$Update) <- "latin1"
+
+data_notes <- data_notes %>% mutate(Update = str_trim(Update))
 
 data_combined <- data_numbers %>% left_join(data_notes, by = c("DateRep" = "DateRep", "GeoId" = "GeoID"))
 
@@ -107,6 +109,7 @@ prepare_data <- function(cases, date_selection, country_selection){
   
   cases_labels <- cases_filtered %>% 
     right_join(cases_totals, by = "LocationName") %>%
+    rowwise() %>%
     mutate(label = paste0(LocationName, ": ", TotalCases, if_else(TotalCases == 1, " case", " cases"),
                           "<br> Notification rate: ",  number_format(notificationRate), " per 100 000 persons"),
            CountryLabel = paste0(LocationName, "<br> <i>Number of cases: ", TotalCases, if_else(TotalCases == 1, " case", " cases"),
